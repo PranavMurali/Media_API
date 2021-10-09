@@ -86,6 +86,11 @@ func GetPostEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
 	id, _ := primitive.ObjectIDFromHex(params["id"])
+	if id.IsZero() {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte("Post does not Exist."))
+		return
+	}
 	var post Post
 	collection := client.Database("SocialMedia").Collection("Posts")
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
