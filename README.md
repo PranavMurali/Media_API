@@ -17,4 +17,3 @@
 
 ### GET /posts/users/{id}
 ![alt](../main/readme/GET_userposts.png)
-
