@@ -57,6 +57,11 @@ func GetPersonEndpoint(response http.ResponseWriter, request *http.Request) {
 	collection := client.Database("SocialMedia").Collection("Users")
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	err := collection.FindOne(ctx, Person{ID: id}).Decode(&person)
+	if id.IsZero() {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte("User does not Exist"))
+		return
+	}
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -93,19 +98,29 @@ func GetPostEndpoint(response http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(response).Encode(post)
 }
 
-func GetUserPostEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetUserPostsEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
-	params := mux.Vars(request)
-	var post Post
+	var posts []Post
 	collection := client.Database("SocialMedia").Collection("Posts")
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	err := collection.FindOne(ctx, Post{UserID: params["id"]}).Decode(&post)
+	cursor, err := collection.Find(ctx, Post{UserID: mux.Vars(request)["id"]})
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(response).Encode(post)
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var post Post
+		cursor.Decode(&post)
+		posts = append(posts, post)
+	}
+	if err := cursor.Err(); err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(response).Encode(posts)
 }
 
 func main() {
@@ -121,6 +136,6 @@ func main() {
 	router.HandleFunc("/posts", CreatePostEndpoint).Methods("POST")
 	router.HandleFunc("/posts/{id}", GetPostEndpoint).Methods("GET")
 
-	router.HandleFunc("/posts/users/{id}", GetUserPostEndpoint).Methods("GET")
+	router.HandleFunc("/posts/users/{id}", GetUserPostsEndpoint).Methods("GET")
 	http.ListenAndServe(":10533", router)
 }
