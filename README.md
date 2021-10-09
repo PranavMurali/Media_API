@@ -4,7 +4,7 @@
 ## Features:
 
 ### POST /users
-![alt](../main/readme/POST_user.png)
+![alt](../main/readme/POST_users.png)
 
 ### GET /users/{id}
 ![alt](../main/readme/GET_user.png)
