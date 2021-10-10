@@ -1,7 +1,7 @@
 # Social Media Backend API
 ### A social media backend API, using Golang and a MongoDB backend. 
 
-## Features:
+## Endpoints:
 
 ### POST /users
 Create a user object using name, email and password fields.
